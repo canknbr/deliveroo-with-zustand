@@ -8,50 +8,50 @@ import {
   ListRenderItem,
   Button,
 } from "react-native";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Colors from "@/constants/Colors";
 import { useNavigation } from "expo-router";
 import categories from "@/assets/data/filter.json";
 import { Ionicons } from "@expo/vector-icons";
 import BouncyCheckbox from "react-native-bouncy-checkbox";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 interface Category {
   name: string;
   count: number;
   checked?: boolean;
 }
 
-const ItemBox = () => {
-  return (
-    <>
-      <View style={styles.itemContainer}>
-        <TouchableOpacity style={styles.item}>
-          <Ionicons name="arrow-down-outline" size={20} color={Colors.medium} />
-          <Text style={{ flex: 1 }}>Sort</Text>
-          <Ionicons name="chevron-forward" size={20} color={Colors.primary} />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.item}>
-          <Ionicons name="fast-food-outline" size={20} color={Colors.medium} />
-          <Text style={{ flex: 1 }}>Hygiene Rating</Text>
-          <Ionicons name="chevron-forward" size={20} color={Colors.primary} />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.item}>
-          <Ionicons name="pricetag-outline" size={20} color={Colors.medium} />
-          <Text style={{ flex: 1 }}>Offers</Text>
-          <Ionicons name="chevron-forward" size={20} color={Colors.primary} />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.item}>
-          <Ionicons name="nutrition-outline" size={20} color={Colors.medium} />
-          <Text style={{ flex: 1 }}>Dietary</Text>
-          <Ionicons name="chevron-forward" size={20} color={Colors.primary} />
-        </TouchableOpacity>
-      </View>
-      <Text style={styles.header}>Categories</Text>
-    </>
-  );
-};
 const Filter = () => {
   const navigation = useNavigation();
   const [items, setItems] = useState<Category[]>(categories);
+  const [selected, setSelected] = useState<Category[]>([]);
+  const flexWidth = useSharedValue(0);
+  const scale = useSharedValue(0);
+  useEffect(() => {
+    const hasSelected = selected.length > 0;
+    const selectedItems = items.filter((item) => item.checked);
+    const newSelected = selectedItems.length > 0;
+    if (hasSelected !== newSelected) {
+      flexWidth.value = withTiming(newSelected ? 150 : 0);
+      scale.value = withTiming(newSelected ? 1 : 0);
+    }
+    setSelected(selectedItems);
+  }, [items]);
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      width: flexWidth.value,
+      opacity: flexWidth.value > 0 ? 1 : 0,
+    };
+  });
+  const animatedText = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: scale.value }],
+    };
+  });
   const handleClearAll = () => {
     const updatedItems = items.map((item) => {
       item.checked = false;
@@ -96,15 +96,53 @@ const Filter = () => {
         ListHeaderComponent={<ItemBox />}
         showsVerticalScrollIndicator={false}
       />
-      <View style={{ height: 100 }} />
+      <View style={{ height: 80 }} />
       <View style={styles.footer}>
-        <TouchableOpacity
-          style={styles.doneButton}
-          onPress={() => navigation.goBack()}>
-          <Text style={styles.doneTitle}>Done</Text>
-        </TouchableOpacity>
+        <View style={styles.buttonContainer}>
+          <Animated.View style={[styles.outlineButton, animatedStyle]}>
+            <TouchableOpacity onPress={handleClearAll}>
+              <Animated.Text style={[styles.outlineButtonTitle, animatedText]}>
+                Clear All
+              </Animated.Text>
+            </TouchableOpacity>
+          </Animated.View>
+          <TouchableOpacity
+            style={styles.doneButton}
+            onPress={() => navigation.goBack()}>
+            <Text style={styles.doneTitle}>Done</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
+  );
+};
+const ItemBox = () => {
+  return (
+    <>
+      <View style={styles.itemContainer}>
+        <TouchableOpacity style={styles.item}>
+          <Ionicons name="arrow-down-outline" size={20} color={Colors.medium} />
+          <Text style={{ flex: 1 }}>Sort</Text>
+          <Ionicons name="chevron-forward" size={20} color={Colors.primary} />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.item}>
+          <Ionicons name="fast-food-outline" size={20} color={Colors.medium} />
+          <Text style={{ flex: 1 }}>Hygiene Rating</Text>
+          <Ionicons name="chevron-forward" size={20} color={Colors.primary} />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.item}>
+          <Ionicons name="pricetag-outline" size={20} color={Colors.medium} />
+          <Text style={{ flex: 1 }}>Offers</Text>
+          <Ionicons name="chevron-forward" size={20} color={Colors.primary} />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.item}>
+          <Ionicons name="nutrition-outline" size={20} color={Colors.medium} />
+          <Text style={{ flex: 1 }}>Dietary</Text>
+          <Ionicons name="chevron-forward" size={20} color={Colors.primary} />
+        </TouchableOpacity>
+      </View>
+      <Text style={styles.header}>Categories</Text>
+    </>
   );
 };
 const styles = StyleSheet.create({
@@ -114,6 +152,8 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   footer: {
+    paddingHorizontal: 50,
+
     position: "absolute",
     bottom: 10,
     left: 0,
@@ -129,10 +169,11 @@ const styles = StyleSheet.create({
     },
   },
   doneButton: {
+    flex: 1,
     height: 60,
     backgroundColor: Colors.primary,
+    padding: 10,
 
-    marginBottom: 30,
     borderRadius: 10,
     justifyContent: "center",
     alignItems: "center",
@@ -169,6 +210,25 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 10,
     backgroundColor: "#fff",
+  },
+  buttonContainer: {
+    flexDirection: "row",
+    gap: 12,
+    justifyContent: "center",
+  },
+  outlineButton: {
+    height: 60,
+
+    borderRadius: 10,
+    borderColor: Colors.primary,
+    borderWidth: 0.5,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  outlineButtonTitle: {
+    color: Colors.primary,
+    fontWeight: "bold",
+    fontSize: 16,
   },
 });
 
