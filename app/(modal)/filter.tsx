@@ -72,7 +72,6 @@ const Filter = () => {
           unfillColor="#FFFFFF"
           iconStyle={{ borderColor: Colors.primary, borderRadius: 4 }}
           innerIconStyle={{ borderWidth: 2, borderRadius: 4 }}
-          textStyle={{ fontFamily: "JosefinSans-Regular" }}
           onPress={() => {
             const isChecked = items[index].checked;
             const updatedItems = items.map((item) => {
